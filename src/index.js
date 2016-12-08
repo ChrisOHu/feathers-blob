@@ -47,30 +47,26 @@ class Service {
   create (data, params, cb) {
     let _buffer, _mime
 
-    const { uri, mime: _mime, buffer: _buffer } = data
+    _buffer = data.file
+    _mime   = data.mime
 
-    if (uri) {
-      const { buffer, MIME } = parseDataURI(uri);
+    if (data.uri) {
+      const { buffer, MIME } = parseDataURI(data.uri)
       _buffer = buffer
       _mime = MIME
     }
 
     const hash = bufferToHash(_buffer);
     const ext = mimeTypes.extension(_mime);
-    id = id || `${hash}.${ext}`;
+    const id = `${hash}.${ext}`;
 
     fromBuffer(_buffer)
-    .pipe(this.Model.createWriteStream({
-      key: id,
-      params: params.s3
-    }, function () {
-      cb(null, {
-        [this.id]: id,
-        uri,
-        size: _buffer.length
-      });
-    }.bind(this)))
-    .on('error', cb);
+      .pipe(
+        this.Model.createWriteStream({
+          key: id,
+          params: params.s3
+        }, function () { cb && cb(null, {id}) }))
+      .on('error', cb);
   }
 
   remove (id, params, cb) {
